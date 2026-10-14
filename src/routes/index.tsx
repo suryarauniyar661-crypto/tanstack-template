@@ -1,375 +1,221 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import { Settings } from 'lucide-react'
-import {
-  SettingsDialog,
-  ChatMessage,
-  LoadingIndicator,
-  ChatInput,
-  Sidebar,
-  WelcomeScreen,
-  TopBanner
-} from '../components'
-import { useConversations, useAppState, store, actions } from '../store'
-import { genAIResponse, type Message } from '../utils'
+import { useEffect, useMemo, useState } from 'react'
+
+const apologyText = `Ms. Careless,\n\nI’m so sorry for all the things that happened between us.\nIt was a huge mistake from my side…\nI know I hurt you a lot and annoyed you.\nBut it’s because I became too comfortable and attached to you 🥺\nYou are my home, my calm, my forever ❤️\nWe fight, we fix, we stay 🫶`
+
+const promiseText = `I can’t promise I won’t fight…\nBut I promise we will fix every fight.\nWe fight, we fix, we stay ❤️\n\nI promise to listen, hug you when upset, make you smile, be your safe place.\nI promise to apologize when wrong, be patient, and hold your hand through every storm.\nI promise to love you, care for you, and never take you for granted.\nBecause you are my forever, my home, my happiness, my Ms.Careless ❤️`
+
+function useTypingEffect(text: string, speed = 20) {
+  const [displayed, setDisplayed] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    let index = 0
+
+    const typeNext = () => {
+      if (cancelled) return
+      if (index < text.length) {
+        setDisplayed(text.slice(0, index + 1))
+        index += 1
+        window.setTimeout(typeNext, speed)
+      }
+    }
+
+    setDisplayed('')
+    typeNext()
+
+    return () => {
+      cancelled = true
+    }
+  }, [text, speed])
+
+  return displayed
+}
+
+function createFallingDecor() {
+  const decor = document.createElement('div')
+  const roll = Math.random()
+
+  if (roll < 0.5) {
+    decor.classList.add('heart')
+    decor.innerHTML = ['❤', '💖', '💜', '💗'][Math.floor(Math.random() * 4)]
+  } else if (roll < 0.8) {
+    decor.classList.add('petal')
+    decor.innerHTML = '🌹'
+  } else {
+    decor.classList.add('sparkle')
+    decor.innerHTML = ['✨', '🌟', '💫'][Math.floor(Math.random() * 3)]
+  }
+
+  decor.style.left = `${Math.random() * 100}vw`
+  decor.style.fontSize = `${Math.random() * 18 + 12}px`
+  decor.style.animationDuration = `${Math.random() * 6 + 14}s`
+  decor.style.opacity = '0.7'
+  document.body.appendChild(decor)
+  window.setTimeout(() => decor.remove(), 18000)
+}
+
+function createCursorSparkle(x: number, y: number) {
+  const sparkle = document.createElement('div')
+  sparkle.classList.add('sparkle')
+  sparkle.innerHTML = ['💖', '💜', '💗'][Math.floor(Math.random() * 3)]
+  sparkle.style.left = `${x}px`
+  sparkle.style.top = `${y}px`
+  sparkle.style.fontSize = `${Math.random() * 12 + 12}px`
+  document.body.appendChild(sparkle)
+  window.setTimeout(() => sparkle.remove(), 1000)
+}
+
+function createBurstHearts() {
+  for (let heartIndex = 0; heartIndex < 50; heartIndex += 1) {
+    const heart = document.createElement('div')
+    heart.classList.add('heart')
+    heart.innerHTML = ['❤', '💖', '💜'][Math.floor(Math.random() * 3)]
+    heart.style.left = `${Math.random() * 100}vw`
+    heart.style.fontSize = `${Math.random() * 20 + 12}px`
+    heart.style.animationDuration = `${Math.random() * 4 + 10}s`
+    document.body.appendChild(heart)
+    window.setTimeout(() => heart.remove(), 5000)
+  }
+}
 
 function Home() {
-  const {
-    conversations,
-    currentConversationId,
-    currentConversation,
-    setCurrentConversationId,
-    createNewConversation,
-    updateConversationTitle,
-    deleteConversation,
-    addMessage,
-  } = useConversations()
-  
-  const { isLoading, setLoading, getActivePrompt } = useAppState()
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const apologyTyped = useTypingEffect(apologyText)
+  const promiseTyped = useTypingEffect(promiseText)
 
-  // Memoize messages to prevent unnecessary re-renders
-  const messages = useMemo(() => currentConversation?.messages || [], [currentConversation]);
+  const totalSlides = useMemo(() => 6, [])
 
-  // Local state
-  const [input, setInput] = useState('')
-  const [editingChatId, setEditingChatId] = useState<string | null>(null)
-  const [editingTitle, setEditingTitle] = useState('')
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const messagesContainerRef = useRef<HTMLDivElement>(null)
-  const [pendingMessage, setPendingMessage] = useState<Message | null>(null)
-  const [error, setError] = useState<string | null>(null);
-
-  const scrollToBottom = useCallback((smooth: boolean = false) => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTo({
-        top: messagesContainerRef.current.scrollHeight,
-        behavior: smooth ? 'smooth' : 'auto'
-      })
-    }
-  }, []);
-
-  // Scroll to bottom when messages change or loading state changes
   useEffect(() => {
-    scrollToBottom(false)
-  }, [messages, scrollToBottom])
+    const intervalId = window.setInterval(createFallingDecor, 1200)
+    return () => window.clearInterval(intervalId)
+  }, [])
 
-  // Smooth scroll during streaming
   useEffect(() => {
-    if (pendingMessage && isLoading) {
-      scrollToBottom(true)
+    const handleMove = (event: MouseEvent) => {
+      createCursorSparkle(event.clientX, event.clientY)
     }
-  }, [pendingMessage, isLoading, scrollToBottom])
+    document.addEventListener('mousemove', handleMove)
+    return () => document.removeEventListener('mousemove', handleMove)
+  }, [])
 
-  const createTitleFromInput = useCallback((text: string) => {
-    const words = text.trim().split(/\s+/)
-    const firstThreeWords = words.slice(0, 3).join(' ')
-    return firstThreeWords + (words.length > 3 ? '...' : '')
-  }, []);
-
-  // Helper function to process AI response
-  const processAIResponse = useCallback(async (conversationId: string, userMessage: Message) => {
-    try {
-      // Get active prompt
-      const activePrompt = getActivePrompt(store.state)
-      let systemPrompt
-      if (activePrompt) {
-        systemPrompt = {
-          value: activePrompt.content,
-          enabled: true,
-        }
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowRight') {
+        setCurrentSlide(prev => (prev + 1) % totalSlides)
       }
-
-      // Get AI response
-      const response = await genAIResponse({
-        data: {
-          messages: [...messages, userMessage],
-          systemPrompt,
-        },
-      })
-
-      const reader = response.body?.getReader()
-      if (!reader) {
-        throw new Error('No reader found in response')
+      if (event.key === 'ArrowLeft') {
+        setCurrentSlide(prev => (prev - 1 + totalSlides) % totalSlides)
       }
-
-      const decoder = new TextDecoder()
-
-      let done = false
-      let newMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant' as const,
-        content: '',
-      }
-      let buffer = '' // Buffer to accumulate partial JSON chunks
-      let pendingTextQueue: string[] = [] // Queue of text chunks to render
-      let isRendering = false
-
-      // Smooth character-by-character rendering with adaptive speed
-      const renderTextSmoothly = async () => {
-        if (isRendering) return
-        isRendering = true
-
-        while (pendingTextQueue.length > 0) {
-          const chunk = pendingTextQueue.shift()!
-
-          // Adaptive rendering: faster for code blocks, smoother for regular text
-          const isCodeBlock = newMessage.content.includes('```') &&
-                             newMessage.content.split('```').length % 2 === 0
-
-          // Characters per frame and delay based on content type
-          const charsPerFrame = isCodeBlock ? 5 : 2 // Faster for code
-          const delay = isCodeBlock ? 2 : 5 // Shorter delay for code
-
-          for (let i = 0; i < chunk.length; i += charsPerFrame) {
-            const slice = chunk.slice(i, i + charsPerFrame)
-            newMessage = {
-              ...newMessage,
-              content: newMessage.content + slice,
-            }
-            setPendingMessage({ ...newMessage })
-
-            // Dynamic delay for natural typing rhythm
-            // ~200-400 chars per second for text, ~500 chars per second for code
-            await new Promise(resolve => setTimeout(resolve, delay))
-          }
-        }
-
-        isRendering = false
-      }
-
-      const scheduleUIUpdate = (text: string) => {
-        pendingTextQueue.push(text)
-        renderTextSmoothly()
-      }
-
-      while (!done) {
-        const out = await reader.read()
-        done = out.done
-        if (!done && out.value) {
-          // Decode the chunk and add to buffer
-          buffer += decoder.decode(out.value, { stream: true })
-
-          // Split by newlines to get complete JSON objects
-          const lines = buffer.split('\n')
-
-          // Keep the last incomplete line in the buffer
-          buffer = lines.pop() || ''
-
-          // Process each complete line
-          for (const line of lines) {
-            if (line.trim()) {
-              try {
-                const json = JSON.parse(line)
-                if (json.type === 'content_block_delta' && json.delta?.text) {
-                  scheduleUIUpdate(json.delta.text)
-                }
-              } catch (e) {
-                console.error('Error parsing streaming response:', e, 'Line:', line)
-              }
-            }
-          }
-        }
-      }
-
-      // Wait for any remaining text to finish rendering
-      while (pendingTextQueue.length > 0 || isRendering) {
-        await new Promise(resolve => setTimeout(resolve, 50))
-      }
-
-      setPendingMessage(null)
-      if (newMessage.content.trim()) {
-        // Add AI message to Convex
-        console.log('Adding AI response to conversation:', conversationId)
-        await addMessage(conversationId, newMessage)
-      }
-    } catch (error) {
-      console.error('Error in AI response:', error)
-      // Add an error message to the conversation
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant' as const,
-        content: 'Sorry, I encountered an error generating a response. Please set the required API keys in your environment variables.',
-      }
-      await addMessage(conversationId, errorMessage)
     }
-  }, [messages, getActivePrompt, addMessage]);
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [totalSlides])
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!input.trim() || isLoading) return
-
-    const currentInput = input
-    setInput('') // Clear input early for better UX
-    setLoading(true)
-    setError(null)
-    
-    const conversationTitle = createTitleFromInput(currentInput)
-
-    try {
-      // Create the user message object
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        role: 'user' as const,
-        content: currentInput.trim(),
-      }
-      
-      let conversationId = currentConversationId
-
-      // If no current conversation, create one in Convex first
-      if (!conversationId) {
-        try {
-          console.log('Creating new Convex conversation with title:', conversationTitle)
-          // Create a new conversation with our title
-          const convexId = await createNewConversation(conversationTitle)
-          
-          if (convexId) {
-            console.log('Successfully created Convex conversation with ID:', convexId)
-            conversationId = convexId
-            
-            // Add user message directly to Convex
-            console.log('Adding user message to Convex conversation:', userMessage.content)
-            await addMessage(conversationId, userMessage)
-          } else {
-            console.warn('Failed to create Convex conversation, falling back to local')
-            // Fallback to local storage if Convex creation failed
-            const tempId = Date.now().toString()
-            const tempConversation = {
-              id: tempId,
-              title: conversationTitle,
-              messages: [],
-            }
-            
-            actions.addConversation(tempConversation)
-            conversationId = tempId
-            
-            // Add user message to local state
-            actions.addMessage(conversationId, userMessage)
-          }
-        } catch (error) {
-          console.error('Error creating conversation:', error)
-          throw new Error('Failed to create conversation')
-        }
-      } else {
-        // We already have a conversation ID, add message directly to Convex
-        console.log('Adding user message to existing conversation:', conversationId)
-        await addMessage(conversationId, userMessage)
-      }
-      
-      // Process with AI after message is stored
-      await processAIResponse(conversationId, userMessage)
-      
-    } catch (error) {
-      console.error('Error:', error)
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant' as const,
-        content: 'Sorry, I encountered an error processing your request.',
-      }
-      if (currentConversationId) {
-        await addMessage(currentConversationId, errorMessage)
-      }
-      else {
-        if (error instanceof Error) {
-          setError(error.message)
-        } else {
-          setError('An unknown error occurred.')
-        }
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [input, isLoading, createTitleFromInput, currentConversationId, createNewConversation, addMessage, processAIResponse, setLoading]);
-
-  const handleNewChat = useCallback(() => {
-    createNewConversation()
-  }, [createNewConversation]);
-
-  const handleDeleteChat = useCallback(async (id: string) => {
-    await deleteConversation(id)
-  }, [deleteConversation]);
-
-  const handleUpdateChatTitle = useCallback(async (id: string, title: string) => {
-    await updateConversationTitle(id, title)
-    setEditingChatId(null)
-    setEditingTitle('')
-  }, [updateConversationTitle]);
+  const goNext = () => setCurrentSlide(prev => (prev + 1) % totalSlides)
+  const goPrev = () => setCurrentSlide(prev => (prev - 1 + totalSlides) % totalSlides)
 
   return (
-    <div className="relative flex h-screen bg-gray-900">
-      {/* Settings Button */}
-      <div className="absolute z-50 top-5 right-5">
-        <button
-          onClick={() => setIsSettingsOpen(true)}
-          className="flex items-center justify-center w-10 h-10 text-white transition-opacity rounded-full bg-gradient-to-r from-orange-500 to-red-600 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-orange-500"
-        >
-          <Settings className="w-5 h-5" />
-        </button>
-      </div>
+    <div className="love-page">
+      <div
+        className="slides"
+        style={{ transform: `translateX(-${currentSlide * 100}vw)` }}
+      >
+        <section className="slide" aria-hidden={currentSlide !== 0} inert={currentSlide !== 0}>
+          <h1>Happy 1st February, My Love 💕</h1>
+          <h2>Happy Valentine Month Ms. Careless ❤️</h2>
+        </section>
 
-      {/* Sidebar */}
-      <Sidebar 
-        conversations={conversations}
-        currentConversationId={currentConversationId}
-        handleNewChat={handleNewChat}
-        setCurrentConversationId={setCurrentConversationId}
-        handleDeleteChat={handleDeleteChat}
-        editingChatId={editingChatId}
-        setEditingChatId={setEditingChatId}
-        editingTitle={editingTitle}
-        setEditingTitle={setEditingTitle}
-        handleUpdateChatTitle={handleUpdateChatTitle}
-      />
-
-      {/* Main Content */}
-      <div className="flex flex-col flex-1">
-        <TopBanner />
-        {error && (
-          <p className="w-full max-w-3xl p-4 mx-auto font-bold text-orange-500">{error}</p>
-        )}
-        {currentConversationId ? (
-          <>
-            {/* Messages */}
-            <div
-              ref={messagesContainerRef}
-              className="flex-1 pb-24 overflow-y-auto messages-container"
+        <section className="slide" aria-hidden={currentSlide !== 1} inert={currentSlide !== 1}>
+          <div className="card">
+            <h2>😔 My Apology</h2>
+            <p className="love-text typing">{apologyTyped}</p>
+            <button
+              className="button"
+              type="button"
+              onClick={() => {
+                window.alert('She smiled 😭❤️\nYou are forgiven 💕')
+                createBurstHearts()
+              }}
             >
-              <div className="w-full max-w-3xl px-4 mx-auto">
-                {[...messages, pendingMessage]
-                  .filter((message): message is Message => message !== null)
-                  .map((message) => (
-                    <ChatMessage
-                      key={message.id}
-                      message={message}
-                      isStreaming={message === pendingMessage && isLoading}
-                    />
-                  ))}
-                {isLoading && <LoadingIndicator />}
-              </div>
-            </div>
+              Forgive Me 🥺
+            </button>
+          </div>
+        </section>
 
-            {/* Input */}
-            <ChatInput 
-              input={input}
-              setInput={setInput}
-              handleSubmit={handleSubmit}
-              isLoading={isLoading}
-            />
-          </>
-        ) : (
-          <WelcomeScreen 
-            input={input}
-            setInput={setInput}
-            handleSubmit={handleSubmit}
-            isLoading={isLoading}
-          />
-        )}
+        <section className="slide" aria-hidden={currentSlide !== 2} inert={currentSlide !== 2}>
+          <div className="card">
+            <h2>🌸 My Promise</h2>
+            <p className="love-text typing">{promiseTyped}</p>
+          </div>
+        </section>
+
+        <section className="slide" aria-hidden={currentSlide !== 3} inert={currentSlide !== 3}>
+          <div className="card gallery">
+            <h2>📸 Memory Gallery</h2>
+            <div>
+              <img src="https://i.imgur.com/6cNUCfy.jpeg" alt="Ms. Careless" />
+              <p className="love-text">(1) Ms. Careless</p>
+            </div>
+            <div>
+              <img
+                src="https://i.imgur.com/4mqZJUS.jpeg"
+                alt="Gifted photo after reconnecting"
+              />
+              <p className="love-text">
+                (2) The first picture you send to me after you came back to my
+                life as my greatest gift… just Cherry on the top 😘
+              </p>
+            </div>
+            <div>
+              <img
+                src="https://i.imgur.com/fps11SC.jpeg"
+                alt="First picture shared while talking"
+              />
+              <p className="love-text">
+                (3) The first picture you sent me when we started talking… it
+                will always be with me forever
+              </p>
+            </div>
+            <div>
+              <img
+                src="https://i.imgur.com/kCPffVC.jpeg"
+                alt="Favorite portrait"
+              />
+              <p className="love-text">
+                (4) The bestest picture I could have asked for… I love you my
+                ms.careless 😘😘 I&apos;m sorry to use same pictures and text here
+                but I wanted it complete before you wake up so I’m so sorry
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="slide" aria-hidden={currentSlide !== 4} inert={currentSlide !== 4}>
+          <h2>💍 Future Dreams</h2>
+          <div className="future-container" aria-label="Future dreams">
+            <div className="future-card">Future trips together ✈️</div>
+            <div className="future-card">Future home together 🏠</div>
+            <div className="future-card">Future forever together 💕</div>
+          </div>
+        </section>
+
+        <section className="slide" aria-hidden={currentSlide !== 5} inert={currentSlide !== 5}>
+          <h2>💘 Final Message</h2>
+          <p className="love-text final-message">
+            You are not my girlfriend, you are my forever, my home, my peace ❤️
+          </p>
+        </section>
       </div>
 
-      {/* Settings Dialog */}
-      <SettingsDialog
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-      />
+      <button className="nav-btn" id="prev" type="button" aria-label="Previous slide" onClick={goPrev}>
+        &#10094;
+      </button>
+      <button className="nav-btn" id="next" type="button" aria-label="Next slide" onClick={goNext}>
+        &#10095;
+      </button>
+
+      <footer>Made with endless love 💕 by me, only for you</footer>
     </div>
   )
 }

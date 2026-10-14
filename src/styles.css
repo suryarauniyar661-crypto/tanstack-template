@@ -49,6 +49,19 @@ html {
   transition: background-color 0.3s ease;
 }
 
+body,
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: "Poppins", sans-serif;
+  background: linear-gradient(120deg, #ffdde1, #ee9ca7, #fcd5ce);
+  background-size: 300% 300%;
+  animation: gradientShift 20s ease infinite;
+}
+
 /* Markdown content styles */
 .prose {
   max-width: none;
@@ -87,6 +100,264 @@ html {
   color: #f9fafb; /* text-gray-50 */
   /* margin-top: 2em; */
   /* margin-bottom: 1em; */
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.love-page {
+  height: 100vh;
+  height: 100dvh;
+  position: relative;
+}
+
+.slides {
+  display: flex;
+  flex-direction: row;
+  width: 600vw;
+  transition: transform 0.8s ease-in-out;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.slide {
+  flex: 0 0 100vw;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  padding: 50px 80px 90px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.slide > * {
+  flex-shrink: 0;
+}
+
+.slide > :first-child {
+  margin-top: auto;
+}
+
+.slide > :last-child {
+  margin-bottom: auto;
+}
+
+.love-page h1 {
+  font-size: 2em;
+  font-weight: 700;
+}
+
+.love-page h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+}
+
+h1,
+h2 {
+  text-align: center;
+  color: #8b3dff;
+  font-family: "Dancing Script", cursive;
+  text-shadow: 0 0 5px #ff9ae0, 0 0 10px #ff6ec7;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 20px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  max-width: 700px;
+  transition: transform 0.3s;
+}
+
+.card:hover {
+  transform: scale(1.02);
+}
+
+.love-text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #4b0082;
+  white-space: pre-wrap;
+}
+
+.final-message {
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.gallery img {
+  width: 100%;
+  border-radius: 15px;
+  margin-bottom: 10px;
+  transition: transform 0.4s, box-shadow 0.4s;
+  cursor: pointer;
+}
+
+.gallery img:hover {
+  transform: scale(1.05) rotate(1.5deg);
+  box-shadow: 0 0 25px rgba(255, 105, 180, 0.5);
+}
+
+footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  margin: 20px;
+  color: #8b3dff;
+  font-weight: bold;
+  text-shadow: 0 0 5px #ff9ae0;
+}
+
+.heart,
+.sparkle,
+.petal {
+  position: fixed;
+  top: -50px;
+  font-size: 16px;
+  z-index: 1000;
+  pointer-events: none;
+  user-select: none;
+  animation-name: fall;
+  animation-timing-function: linear;
+}
+
+@keyframes fall {
+  to {
+    transform: translateY(110vh);
+    opacity: 0;
+  }
+}
+
+.typing {
+  border-right: 0.1em solid #ff6ec7;
+  white-space: pre-wrap;
+}
+
+.button {
+  display: inline-block;
+  padding: 10px 20px;
+  background: #ff6ec7;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: transform 0.2s;
+}
+
+.button:hover {
+  transform: scale(1.1);
+}
+
+.reason-card,
+.future-card {
+  background: #ffe6f0;
+  border-radius: 15px;
+  padding: 15px;
+  margin: 10px;
+  display: inline-block;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s;
+}
+
+.reason-card:hover,
+.future-card:hover {
+  transform: scale(1.05);
+}
+
+.future-container {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  width: 100%;
+  padding: 20px;
+}
+
+.future-container::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-btn {
+  position: absolute;
+  top: 50%;
+  font-size: 40px;
+  color: #ff6ec7;
+  background: rgba(255, 255, 255, 0.6);
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  cursor: pointer;
+  z-index: 10;
+  transform: translateY(-50%);
+}
+
+#prev {
+  left: 10px;
+}
+
+#next {
+  right: 10px;
+}
+
+.nav-btn:focus-visible,
+.button:focus-visible {
+  outline: 3px solid #8b3dff;
+  outline-offset: 4px;
+}
+
+@media (max-width: 600px) {
+  .slide {
+    padding: 30px 52px 90px;
+  }
+
+  .card {
+    padding: 16px;
+    width: 100%;
+  }
+
+  .nav-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 26px;
+  }
+
+  #prev {
+    left: 6px;
+  }
+
+  #next {
+    right: 6px;
+  }
+
+  footer {
+    font-size: 12px;
+  }
+
+  .future-container {
+    padding: 10px 0;
+  }
+
+  .future-card {
+    flex-shrink: 0;
+  }
 }
 
 .prose ul, .prose ol {
