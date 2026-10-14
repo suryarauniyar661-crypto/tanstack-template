@@ -20,7 +20,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Chat Starter',
+        title: 'My Love 💕',
       },
     ],
     links: [
@@ -28,20 +28,24 @@ export const Route = createRootRoute({
         rel: 'stylesheet',
         href: appCss,
       },
+      {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Poppins:wght@400;500&display=swap',
+      },
     ],
   }),
 
   component: () => (
     <RootDocument>
       <Outlet />
-      <TanStackRouterDevtools />
+      {import.meta.env.DEV && <TanStackRouterDevtools />}
     </RootDocument>
   ),
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html>
+    <html lang="en">
       <head>
         <HeadContent />
       </head>
